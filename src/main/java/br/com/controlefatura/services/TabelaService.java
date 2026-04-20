@@ -3,8 +3,8 @@ package br.com.controlefatura.services;
 import java.math.BigDecimal;
 import java.util.logging.Logger;
 
-import javax.swing.ListSelectionModel;
 import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;

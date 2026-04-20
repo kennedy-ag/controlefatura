@@ -145,16 +145,16 @@ public class Main {
         JPanel painel = new JPanel();
 
         JButton botaoAdicionar = criarBotaoAdicionar();
-        JButton botaoPagar = criarBotaoPagar();
         JButton botaoExcluir = criarBotaoExcluir();
-        JButton botaoRodarSQL = criarBotaoRodarSQL();
+        JButton botaoPagar = criarBotaoPagar();
         JButton botaoVerValor = criarBotaoVerValor();
+        JButton botaoRodarSQL = criarBotaoRodarSQL();
 
         painel.add(botaoAdicionar);
-        painel.add(botaoPagar);
         painel.add(botaoExcluir);
-        painel.add(botaoRodarSQL);
+        painel.add(botaoPagar);
         painel.add(botaoVerValor);
+        painel.add(botaoRodarSQL);
 
         return painel;
     }
