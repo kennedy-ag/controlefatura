@@ -146,6 +146,59 @@ public class FaturaDao {
         }
     }
 
+    public int deletarLancamentoPorId(int id) {
+        String sql = "DELETE FROM lancamento WHERE id = ?";
+        
+        try (Connection conn = obterConexao();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao excluir lançamento!", e);
+        }
+    }
+
+    public int deletarLancamentosPorIds(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new IllegalArgumentException("Lista de IDs não pode ser vazia.");
+        }
+
+        String sql = "DELETE FROM lancamento WHERE id = ?";
+        Connection conn = null;
+        try {
+            conn = obterConexao();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                int totalDeleted = 0;
+                for (Integer id : ids) {
+                    ps.setInt(1, id);
+                    totalDeleted += ps.executeUpdate();
+                }
+                conn.commit();
+                return totalDeleted;
+            }
+        } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackEx) {
+                    // ignore rollback failure
+                }
+            }
+            throw new RuntimeException("Erro ao excluir lançamentos!", e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException closeEx) {
+                    // ignore close failure
+                }
+            }
+        }
+    }
+
     public String rodarQueryEventual(String sql) {
         try (Connection conn = obterConexao();
              PreparedStatement ps = conn.prepareStatement(sql)) {

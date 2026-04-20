@@ -138,6 +138,38 @@ public class FaturaService {
     }
 
     /**
+     * Exclui um lançamento pelo ID.
+     */
+    public void deletarLancamento(int id) {
+        deletarLancamentos(List.of(id));
+    }
+
+    /**
+     * Exclui vários lançamentos pelos IDs.
+     */
+    public void deletarLancamentos(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new FaturaException("Nenhum ID informado para exclusão.");
+        }
+        for (Integer id : ids) {
+            if (id == null || id <= 0) {
+                throw new FaturaException("IDs inválidos para exclusão.");
+            }
+        }
+
+        try {
+            int rowsDeleted = faturaDao.deletarLancamentosPorIds(ids);
+            if (rowsDeleted != ids.size()) {
+                throw new FaturaException("Nem todos os lançamentos foram encontrados para exclusão.");
+            }
+            logger.info(String.format("Lançamentos excluídos com sucesso: %s", ids));
+        } catch (Exception e) {
+            logger.severe(String.format("Erro ao excluir lançamentos: %s", e.getMessage()));
+            throw new FaturaException("Falha ao excluir lançamentos.", e);
+        }
+    }
+
+    /**
      * Retorna o ID máximo atual no banco de dados.
      */
     public int getMaxId() {

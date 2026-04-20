@@ -3,6 +3,7 @@ package br.com.controlefatura.services;
 import java.math.BigDecimal;
 import java.util.logging.Logger;
 
+import javax.swing.ListSelectionModel;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -35,6 +36,9 @@ public class TabelaService {
             JTable tabela = new JTable(tableModel);
             tabela.setRowHeight(ROW_HEIGHT);
             tabela.setRowSorter(sorter);
+            tabela.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+            tabela.setRowSelectionAllowed(true);
+            tabela.setColumnSelectionAllowed(false);
 
             redimensionarColunas(tabela);
             centralizarColunas(tabela, COLUNAS_CENTRALIZAR);

@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import javax.swing.JButton;
@@ -144,11 +146,13 @@ public class Main {
 
         JButton botaoAdicionar = criarBotaoAdicionar();
         JButton botaoPagar = criarBotaoPagar();
+        JButton botaoExcluir = criarBotaoExcluir();
         JButton botaoRodarSQL = criarBotaoRodarSQL();
         JButton botaoVerValor = criarBotaoVerValor();
 
         painel.add(botaoAdicionar);
         painel.add(botaoPagar);
+        painel.add(botaoExcluir);
         painel.add(botaoRodarSQL);
         painel.add(botaoVerValor);
 
@@ -191,6 +195,72 @@ public class Main {
             }
         });
         return botao;
+    }
+
+    /**
+     * Cria o botão para excluir um lançamento.
+     */
+    private JButton criarBotaoExcluir() {
+        JButton botao = new JButton("Excluir");
+        botao.addActionListener(e -> {
+            try {
+                List<Integer> ids = obterIdsSelecionadosOuSolicitados();
+                if (ids == null || ids.isEmpty()) {
+                    return;
+                }
+
+                int confirmado = JOptionPane.showConfirmDialog(
+                    null,
+                    "Deseja realmente excluir " + ids.size() + " lançamento(s)?\nIDs: " + ids,
+                    "Confirmar Exclusão",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+                );
+
+                if (confirmado == JOptionPane.YES_OPTION) {
+                    faturaService.deletarLancamentos(ids);
+                    atualizarInterface();
+                    JOptionPane.showMessageDialog(null, "Lançamento(s) excluído(s) com sucesso!", "Excluído", JOptionPane.INFORMATION_MESSAGE);
+                }
+            } catch (Exception ex) {
+                logger.warning(String.format("Erro ao excluir lançamento: %s", ex.getMessage()));
+                JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        return botao;
+    }
+
+    private List<Integer> obterIdsSelecionadosOuSolicitados() {
+        int[] selectedRows = tabela.getSelectedRows();
+        if (selectedRows.length > 0) {
+            List<Integer> ids = new ArrayList<>();
+            for (int viewRow : selectedRows) {
+                int modelRow = tabela.convertRowIndexToModel(viewRow);
+                Object idValue = tableModel.getValueAt(modelRow, 0);
+                if (idValue instanceof Integer id) {
+                    ids.add(id);
+                } else {
+                    throw new FaturaException("ID selecionado inválido.");
+                }
+            }
+            return ids;
+        }
+
+        String idInput = JOptionPane.showInputDialog("Digite o(s) ID(s) do lançamento a excluir, separados por vírgula:");
+        if (idInput == null || idInput.isBlank()) {
+            return null;
+        }
+
+        String[] parts = idInput.split(",");
+        List<Integer> ids = new ArrayList<>();
+        for (String part : parts) {
+            try {
+                ids.add(Integer.parseInt(part.trim()));
+            } catch (NumberFormatException e) {
+                throw new FaturaException("ID inválido. Use apenas números inteiros separando por vírgula.", e);
+            }
+        }
+        return ids;
     }
 
     /**
