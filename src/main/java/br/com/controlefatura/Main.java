@@ -3,6 +3,8 @@ package br.com.controlefatura;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.math.BigDecimal;
+import java.util.logging.Logger;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -14,21 +16,99 @@ import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
+import br.com.controlefatura.exception.FaturaException;
+import br.com.controlefatura.persistence.FaturaDao;
 import br.com.controlefatura.services.FaturaService;
 import br.com.controlefatura.services.FormService;
 import br.com.controlefatura.services.TabelaService;
 
-public class Main { 
-    public static void main(String[] args) {
-    	FaturaService faturaService = new FaturaService();
-    	
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Controle de fatura");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(630, 420);
-            frame.setLocationRelativeTo(null);
+/**
+ * Classe principal da aplicação de controle de fatura.
+ * Inicializa a interface gráfica e coordena os serviços.
+ */
+public class Main {
+    private static final Logger logger = Logger.getLogger(Main.class.getName());
+    
+    private FaturaService faturaService;
+    private FormService formService;
+    private JLabel labelTotal;
+    private DefaultTableModel tableModel;
+    private JTable tabela;
 
-            DefaultTableModel tableModel = new DefaultTableModel() {
+    public static void main(String[] args) {
+        try {
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    new Main().inicializarInterface();
+                } catch (Exception e) {
+                    logger.severe(String.format("Erro fatal ao inicializar interface: %s", e.getMessage()));
+                    JOptionPane.showMessageDialog(
+                        null,
+                        "Erro ao iniciar a aplicação: " + e.getMessage(),
+                        "Erro Fatal",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                    System.exit(1);
+                }
+            });
+        } catch (Exception e) {
+            logger.severe(String.format("Erro ao executar aplicação: %s", e.getMessage()));
+            System.exit(1);
+        }
+    }
+
+    /**
+     * Inicializa os serviços necessários.
+     */
+    private void inicializarServicos() {
+        try {
+            FaturaDao faturaDao = new FaturaDao();
+            this.faturaService = new FaturaService(faturaDao);
+            this.formService = new FormService(faturaService);
+            logger.info("Serviços inicializados com sucesso.");
+        } catch (Exception e) {
+            logger.severe(String.format("Erro ao inicializar serviços: %s", e.getMessage()));
+            throw new FaturaException("Falha ao inicializar serviços.", e);
+        }
+    }
+
+    /**
+     * Inicializa a interface gráfica da aplicação.
+     */
+    private void inicializarInterface() {
+        inicializarServicos();
+
+        JFrame frame = new JFrame("Controle de fatura");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(630, 420);
+        frame.setLocationRelativeTo(null);
+
+        // Criar modelo da tabela
+        this.tableModel = criarModeloTabela();
+        this.tabela = TabelaService.criarTabela(tableModel);
+        JScrollPane scrollPane = new JScrollPane(tabela);
+
+        // Criar labels e botões
+        criarLabelTotal();
+        JPanel painelBotoes = criarPainelBotoes();
+        JPanel bottomPanel = criarPainelInferior(painelBotoes);
+
+        // Criar painel principal
+        JPanel painelPrincipal = new JPanel(new BorderLayout());
+        painelPrincipal.add(scrollPane, BorderLayout.CENTER);
+        painelPrincipal.add(bottomPanel, BorderLayout.SOUTH);
+
+        frame.add(painelPrincipal);
+        frame.setVisible(true);
+        logger.info("Interface inicializada com sucesso.");
+    }
+
+    /**
+     * Cria o modelo da tabela com dados iniciais.
+     */
+    private DefaultTableModel criarModeloTabela() {
+        try {
+            DefaultTableModel model = new DefaultTableModel() {
                 private static final long serialVersionUID = 1L;
 
                 @Override
@@ -36,76 +116,165 @@ public class Main {
                     return false;
                 }
             };
-            
-            faturaService.getColunas().forEach((coluna) -> tableModel.addColumn(coluna));
-            faturaService.getDadosFatura().forEach((lancamento) -> tableModel.addRow(lancamento));
-            
-            JTable tabela = TabelaService.criarTabela(tableModel);
-            JScrollPane scrollPane = new JScrollPane(tabela);
-            
-            // Criação da label e do valor
-            JLabel label = new JLabel("Total:");
-            JLabel value = new JLabel("R$ "+faturaService.getTotalFaturaFormatado());
-            value.setFont(new Font("Arial", Font.PLAIN, 20));
 
-            JButton botaoAdicionar = new JButton("Adicionar"); 
-            botaoAdicionar.addActionListener((e) -> {
-                Object[] lancamento = FormService.formAdicionarLancamento();
-                faturaService.inserirLancamento(lancamento);
-                value.setText("R$ "+faturaService.getTotalFaturaFormatado());
-                TabelaService.atualizarTabela(tableModel);
-                JOptionPane.showMessageDialog(null, "Lançamento adicionado!");
-            });
-            
-            JButton botaoPagar = new JButton("Pagar");
-            botaoPagar.addActionListener((e) -> {
-                faturaService.pagarFatura();
-                value.setText("R$ "+faturaService.getTotalFaturaFormatado());
-                TabelaService.atualizarTabela(tableModel);
-            });
-                
-            JButton botaoRodarEventual = new JButton("SQL");
-            botaoRodarEventual.addActionListener(
-                (e) -> {
-                    String sql = JOptionPane.showInputDialog("Digite a query eventual: ");
-                    JOptionPane.showMessageDialog(null, faturaService.rodarQueryEventual(sql));
-                    TabelaService.atualizarTabela(tableModel);
+            faturaService.getColunas().forEach(model::addColumn);
+            faturaService.getDadosFatura().forEach(model::addRow);
+
+            return model;
+        } catch (Exception e) {
+            logger.severe(String.format("Erro ao criar modelo da tabela: %s", e.getMessage()));
+            throw new FaturaException("Falha ao carregar dados da tabela.", e);
+        }
+    }
+
+    /**
+     * Cria a label com o total da fatura.
+     */
+    private void criarLabelTotal() {
+        JLabel value = new JLabel("R$ " + faturaService.getTotalFaturaFormatado());
+        value.setFont(new Font("Arial", Font.PLAIN, 20));
+        this.labelTotal = value;
+    }
+
+    /**
+     * Cria o painel com os botões da interface.
+     */
+    private JPanel criarPainelBotoes() {
+        JPanel painel = new JPanel();
+
+        JButton botaoAdicionar = criarBotaoAdicionar();
+        JButton botaoPagar = criarBotaoPagar();
+        JButton botaoRodarSQL = criarBotaoRodarSQL();
+        JButton botaoVerValor = criarBotaoVerValor();
+
+        painel.add(botaoAdicionar);
+        painel.add(botaoPagar);
+        painel.add(botaoRodarSQL);
+        painel.add(botaoVerValor);
+
+        return painel;
+    }
+
+    /**
+     * Cria o botão para adicionar novo lançamento.
+     */
+    private JButton criarBotaoAdicionar() {
+        JButton botao = new JButton("Adicionar");
+        botao.addActionListener(e -> {
+            try {
+                Object[] lancamento = formService.formAdicionarLancamento();
+                if (lancamento != null) {
+                    faturaService.inserirLancamento(lancamento);
+                    atualizarInterface();
+                    JOptionPane.showMessageDialog(null, "Lançamento adicionado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                 }
-            );
-
-            JButton botaoVerValorMes = new JButton("Valor");
-            botaoVerValorMes.addActionListener(
-                (e) -> {
-                    JOptionPane.showMessageDialog(null, faturaService.getValorMes());
-                }
-            );
-
-            // Criação do painel para os botões
-            JPanel painelBotoes = new JPanel();
-            painelBotoes.add(botaoAdicionar);
-            painelBotoes.add(botaoPagar);
-            painelBotoes.add(botaoRodarEventual);
-            painelBotoes.add(botaoVerValorMes);
-
-            // Painel para a label e o valor
-            JPanel labelPanel = new JPanel();
-            labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-            labelPanel.add(label);
-            labelPanel.add(value);
-            
-            // Painel para agrupar label e valor
-            JPanel bottomPanel = new JPanel();
-            bottomPanel.setLayout(new BorderLayout());
-            bottomPanel.add(labelPanel, BorderLayout.NORTH);
-            bottomPanel.add(painelBotoes, BorderLayout.SOUTH);
-
-            // Criação do painel principal
-            JPanel painelPrincipal = new JPanel(new BorderLayout());
-            painelPrincipal.add(scrollPane, BorderLayout.CENTER);
-            painelPrincipal.add(bottomPanel, BorderLayout.SOUTH);
-
-            frame.add(painelPrincipal);
-            frame.setVisible(true);
+            } catch (Exception ex) {
+                logger.warning(String.format("Erro ao adicionar lançamento: %s", ex.getMessage()));
+                JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
         });
+        return botao;
+    }
+
+    /**
+     * Cria o botão para pagar fatura.
+     */
+    private JButton criarBotaoPagar() {
+        JButton botao = new JButton("Pagar");
+        botao.addActionListener(e -> {
+            try {
+                faturaService.pagarFatura();
+                atualizarInterface();
+            } catch (Exception ex) {
+                logger.warning(String.format("Erro ao pagar fatura: %s", ex.getMessage()));
+                JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        return botao;
+    }
+
+    /**
+     * Cria o botão para executar SQL customizado.
+     */
+    private JButton criarBotaoRodarSQL() {
+        JButton botao = new JButton("SQL");
+        botao.addActionListener(e -> {
+            try {
+                String sql = JOptionPane.showInputDialog("Digite a query SQL eventual:");
+                if (sql != null && !sql.isBlank()) {
+                    String resultado = faturaService.rodarQueryEventual(sql);
+                    JOptionPane.showMessageDialog(null, resultado, "Resultado", JOptionPane.INFORMATION_MESSAGE);
+                    TabelaService.atualizarTabela(tableModel, faturaService);
+                    atualizarTotal();
+                }
+            } catch (Exception ex) {
+                logger.warning(String.format("Erro ao executar SQL: %s", ex.getMessage()));
+                JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        return botao;
+    }
+
+    /**
+     * Cria o botão para visualizar valor do mês.
+     */
+    private JButton criarBotaoVerValor() {
+        JButton botao = new JButton("Valor");
+        botao.addActionListener(e -> {
+            try {
+                BigDecimal valor = faturaService.getValorMes();
+                JOptionPane.showMessageDialog(null, "Valor do mês: R$ " + valor, "Valor", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                logger.warning(String.format("Erro ao obter valor do mês: %s", ex.getMessage()));
+                JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        return botao;
+    }
+
+    /**
+     * Cria o painel inferior com as informações e botões.
+     */
+    private JPanel criarPainelInferior(JPanel painelBotoes) {
+        JLabel labelTexto = new JLabel("Total:");
+        labelTexto.setFont(new Font("Arial", Font.PLAIN, 14));
+        labelTotal.setFont(new Font("Arial", Font.PLAIN, 20));
+
+        JPanel labelPanel = new JPanel();
+        labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        labelPanel.add(labelTexto);
+        labelPanel.add(labelTotal);
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setLayout(new BorderLayout());
+        bottomPanel.add(labelPanel, BorderLayout.NORTH);
+        bottomPanel.add(painelBotoes, BorderLayout.SOUTH);
+
+        return bottomPanel;
+    }
+
+    /**
+     * Atualiza os dados exibidos na interface.
+     */
+    private void atualizarInterface() {
+        try {
+            TabelaService.atualizarTabela(tableModel, faturaService);
+            atualizarTotal();
+            logger.info("Interface atualizada com sucesso.");
+        } catch (Exception e) {
+            logger.severe(String.format("Erro ao atualizar interface: %s", e.getMessage()));
+            JOptionPane.showMessageDialog(null, "Erro ao atualizar interface: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Atualiza apenas o valor total exibido.
+     */
+    private void atualizarTotal() {
+        try {
+            labelTotal.setText("R$ " + faturaService.getTotalFaturaFormatado());
+        } catch (Exception e) {
+            logger.warning(String.format("Erro ao atualizar total: %s", e.getMessage()));
+        }
     }
 }
