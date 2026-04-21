@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FaturaDao {
-    private static final String DB_URL = "jdbc:sqlite:./dados-fatura.db";
+    private static final String DB_URL = "jdbc:sqlite:./src/main/resources/dados-fatura.db";
     private static final String DB_DRIVER = "org.sqlite.JDBC";
     private static final RoundingMode DEFAULT_ROUNDING = RoundingMode.FLOOR;
     private static final int SCALE = 2;
