@@ -255,7 +255,7 @@ public class Main {
         List<Integer> ids = new ArrayList<>();
         for (String part : parts) {
             try {
-                ids.add(Integer.parseInt(part.trim()));
+                ids.add(Integer.valueOf(part.trim()));
             } catch (NumberFormatException e) {
                 throw new FaturaException("ID inválido. Use apenas números inteiros separando por vírgula.", e);
             }
