@@ -1,8 +1,0 @@
-br\com\controlefatura\services\FaturaService.class
-br\com\controlefatura\services\FormService.class
-br\com\controlefatura\util\ValidadorInput.class
-br\com\controlefatura\persistence\FaturaDao.class
-br\com\controlefatura\exception\FaturaException.class
-br\com\controlefatura\services\TabelaService.class
-br\com\controlefatura\Main$1.class
-br\com\controlefatura\Main.class
