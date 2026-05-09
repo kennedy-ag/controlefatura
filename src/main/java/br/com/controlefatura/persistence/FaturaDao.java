@@ -1,7 +1,11 @@
 package br.com.controlefatura.persistence;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,10 +16,40 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FaturaDao {
-    private static final String DB_URL = "jdbc:sqlite:./src/main/resources/dados-fatura.db";
     private static final String DB_DRIVER = "org.sqlite.JDBC";
     private static final RoundingMode DEFAULT_ROUNDING = RoundingMode.FLOOR;
     private static final int SCALE = 2;
+    private static String DB_URL;
+
+    static {
+        try {
+            DB_URL = inicializarBancoDados();
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao inicializar banco de dados: " + e.getMessage(), e);
+        }
+    }
+
+    private static String inicializarBancoDados() throws IOException {
+        // Tenta carregar o banco de dados a partir dos recursos
+        InputStream recursoDb = FaturaDao.class.getResourceAsStream("/dados-fatura.db");
+        
+        if (recursoDb != null) {
+            // Banco está nos recursos (dentro do jar)
+            File dbTemp = new File(System.getProperty("user.home") + "/.controlefatura/dados-fatura.db");
+            dbTemp.getParentFile().mkdirs();
+            
+            // Copia o banco apenas se ele não existe (primeira execução)
+            if (!dbTemp.exists()) {
+                Files.copy(recursoDb, dbTemp.toPath());
+            }
+            recursoDb.close();
+            
+            return "jdbc:sqlite:" + dbTemp.getAbsolutePath();
+        } else {
+            // Banco está no projeto (desenvolvimento)
+            return "jdbc:sqlite:./src/main/resources/dados-fatura.db";
+        }
+    }
 
     private Connection obterConexao() {
         try {

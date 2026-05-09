@@ -16,7 +16,7 @@ import br.com.controlefatura.exception.FaturaException;
 import br.com.controlefatura.persistence.FaturaDao;
 
 /**
- * Serviço de negócio para controle de faturas.
+ * Serviço para controle de faturas.
  * Centraliza a lógica de cálculos e operações com lançamentos.
  */
 public class FaturaService {

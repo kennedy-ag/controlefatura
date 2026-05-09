@@ -1,11 +1,16 @@
 package br.com.controlefatura.services;
 
+import java.awt.Color;
+import java.awt.Font;
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.logging.Logger;
 
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
@@ -13,11 +18,93 @@ import javax.swing.table.TableRowSorter;
 import br.com.controlefatura.exception.FaturaException;
 
 /**
+ * Renderer customizado para aplicar negrito e centralização.
+ */
+class BoldCenterRenderer extends DefaultTableCellRenderer {
+    @Override
+    public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        setHorizontalAlignment(SwingConstants.CENTER);
+        
+        Font fontAtual = getFont();
+        if (fontAtual != null) {
+            setFont(new Font(fontAtual.getName(), Font.BOLD, fontAtual.getSize()));
+        }
+        return this;
+    }
+}
+
+/**
+ * Renderer customizado para aplicar cores baseado no valor (S/N).
+ */
+class ColoredCellRenderer extends DefaultTableCellRenderer {
+    @Override
+    public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        setHorizontalAlignment(SwingConstants.CENTER);
+        
+        if ("S".equals(value)) {
+            setForeground(Color.BLUE);
+        } else if ("N".equals(value)) {
+            setForeground(new Color(255, 140, 0)); // Laranja
+        } else {
+            setForeground(Color.BLACK);
+        }
+        return this;
+    }
+}
+
+/**
+ * Renderer customizado para formatar números decimais com padrão brasileiro.
+ */
+class FormattedDecimalRenderer extends DefaultTableCellRenderer {
+    private static final DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+    private static final DecimalFormat decimalFormat;
+    
+    static {
+        symbols.setDecimalSeparator(',');
+        symbols.setGroupingSeparator('.');
+        decimalFormat = new DecimalFormat("#,##0.00", symbols);
+    }
+    
+    @Override
+    public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        setHorizontalAlignment(SwingConstants.CENTER);
+        
+        if (value instanceof BigDecimal bigDecimal) {
+            setText(decimalFormat.format(bigDecimal));
+        }
+        return this;
+    }
+}
+
+/**
+ * Renderer customizado com espaçamento lateral.
+ */
+class PaddedLeftRenderer extends DefaultTableCellRenderer {
+    private static final int PADDING = 10;
+    
+    @Override
+    public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        setHorizontalAlignment(SwingConstants.LEFT);
+        setBorder(new EmptyBorder(0, PADDING, 0, 0));
+        return this;
+    }
+}
+
+/**
  * Serviço para gerenciar a tabela de faturas na interface.
  */
 public class TabelaService {
     private static final Logger logger = Logger.getLogger(TabelaService.class.getName());
-    private static final int ROW_HEIGHT = 25;
+    private static final int ROW_HEIGHT = 27;
+    private static final int HEADER_HEIGHT = 27;
     private static final int[] COLUMN_WIDTHS = {60, 170, 80, 50, 80, 50, 90};
     private static final int[] COLUNAS_CENTRALIZAR = {0, 2, 3, 4, 5};
 
@@ -35,6 +122,7 @@ public class TabelaService {
 
             JTable tabela = new JTable(tableModel);
             tabela.setRowHeight(ROW_HEIGHT);
+            tabela.getTableHeader().setPreferredSize(new java.awt.Dimension(0, HEADER_HEIGHT));
             tabela.setRowSorter(sorter);
             tabela.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
             tabela.setRowSelectionAllowed(true);
@@ -42,6 +130,10 @@ public class TabelaService {
 
             redimensionarColunas(tabela);
             centralizarColunas(tabela, COLUNAS_CENTRALIZAR);
+            aplicarNegroNaColuna(tabela, 0);
+            aplicarCoresNaColuna(tabela, 5);
+            aplicarFormatacaoDecimal(tabela, 2, 4);
+            aplicarEspacamentoNaColuna(tabela, 1);
 
             return tabela;
         } catch (Exception e) {
@@ -116,6 +208,45 @@ public class TabelaService {
             if (coluna < tabela.getColumnCount()) {
                 tabela.getColumnModel().getColumn(coluna).setCellRenderer(centralizado);
             }
+        }
+    }
+
+    /**
+     * Aplica negrito e centralização em uma coluna específica.
+     */
+    private static void aplicarNegroNaColuna(JTable tabela, int coluna) {
+        if (coluna < tabela.getColumnCount()) {
+            tabela.getColumnModel().getColumn(coluna).setCellRenderer(new BoldCenterRenderer());
+        }
+    }
+
+    /**
+     * Aplica cores (azul para S, laranja para N) em uma coluna específica.
+     */
+    private static void aplicarCoresNaColuna(JTable tabela, int coluna) {
+        if (coluna < tabela.getColumnCount()) {
+            tabela.getColumnModel().getColumn(coluna).setCellRenderer(new ColoredCellRenderer());
+        }
+    }
+
+    /**
+     * Aplica formatação de números decimais em colunas específicas.
+     */
+    private static void aplicarFormatacaoDecimal(JTable tabela, int... colunas) {
+        FormattedDecimalRenderer renderer = new FormattedDecimalRenderer();
+        for (int coluna : colunas) {
+            if (coluna < tabela.getColumnCount()) {
+                tabela.getColumnModel().getColumn(coluna).setCellRenderer(renderer);
+            }
+        }
+    }
+
+    /**
+     * Aplica espaçamento lateral em uma coluna específica.
+     */
+    private static void aplicarEspacamentoNaColuna(JTable tabela, int coluna) {
+        if (coluna < tabela.getColumnCount()) {
+            tabela.getColumnModel().getColumn(coluna).setCellRenderer(new PaddedLeftRenderer());
         }
     }
 }

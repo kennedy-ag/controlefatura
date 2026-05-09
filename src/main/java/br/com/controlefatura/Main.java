@@ -80,9 +80,9 @@ public class Main {
     private void inicializarInterface() {
         inicializarServicos();
 
-        JFrame frame = new JFrame("Controle de fatura");
+        JFrame frame = new JFrame("Controle de Faturas");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(630, 420);
+        frame.setSize(750, 420);
         frame.setLocationRelativeTo(null);
 
         // Criar modelo da tabela
