@@ -16,6 +16,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 
 import br.com.controlefatura.exception.FaturaException;
@@ -36,6 +37,8 @@ public class Main {
     private JLabel labelTotal;
     private DefaultTableModel tableModel;
     private JTable tabela;
+
+    private final int FRAME_WIDTH = 750;
 
     public static void main(String[] args) {
         try {
@@ -82,7 +85,7 @@ public class Main {
 
         JFrame frame = new JFrame("Controle de Faturas");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(750, 420);
+        frame.setSize(FRAME_WIDTH, getAlturaDinamicaFrame());
         frame.setLocationRelativeTo(null);
 
         // Criar modelo da tabela
@@ -314,6 +317,7 @@ public class Main {
         labelPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         labelPanel.add(labelTexto);
         labelPanel.add(labelTotal);
+        labelPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
 
         JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new BorderLayout());
@@ -345,6 +349,17 @@ public class Main {
             labelTotal.setText("R$ " + faturaService.getTotalFaturaFormatado());
         } catch (Exception e) {
             logger.warning(String.format("Erro ao atualizar total: %s", e.getMessage()));
+        }
+    }
+
+    private int getAlturaDinamicaFrame() {
+        int quantidadeLinhas = faturaService.getDadosFatura().size();
+        if(quantidadeLinhas <= 6) {
+            return 350;
+        } else if(quantidadeLinhas <= 17) {
+            return 180 + (quantidadeLinhas * TabelaService.ROW_HEIGHT);
+        } else {
+            return 650;
         }
     }
 }

@@ -103,7 +103,7 @@ class PaddedLeftRenderer extends DefaultTableCellRenderer {
  */
 public class TabelaService {
     private static final Logger logger = Logger.getLogger(TabelaService.class.getName());
-    private static final int ROW_HEIGHT = 27;
+    public static final int ROW_HEIGHT = 27;
     private static final int HEADER_HEIGHT = 27;
     private static final int[] COLUMN_WIDTHS = {60, 170, 80, 50, 80, 50, 90};
     private static final int[] COLUNAS_CENTRALIZAR = {0, 2, 3, 4, 5};
