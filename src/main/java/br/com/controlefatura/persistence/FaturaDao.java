@@ -105,8 +105,8 @@ public class FaturaDao {
     }
 
     public void inserirLancamento(Object[] lancamento) {
-        String sql = "INSERT INTO lancamento (id, nome, valor_a_pagar, parcelas_restantes, in_eh_meu, meses_restantes, valor_da_parcela) "
-                   + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO lancamento (id, nome, valor_a_pagar, parcelas_restantes, in_eh_meu, meses_restantes, valor_da_parcela, cartao_utilizado) "
+                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = obterConexao();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -118,7 +118,7 @@ public class FaturaDao {
             ps.setString(5, (String) lancamento[4]);
             ps.setString(6, (String) lancamento[5]);
             ps.setBigDecimal(7, (BigDecimal) lancamento[6]);
-
+            ps.setString(8, (String) lancamento[7]);
             int rowsAffected = ps.executeUpdate();
             System.out.println(rowsAffected + " linha(s) inserida(s).");
         } catch (SQLException e) {

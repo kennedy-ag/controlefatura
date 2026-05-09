@@ -106,7 +106,7 @@ public class FaturaService {
      * Insere um novo lançamento de fatura.
      */
     public void inserirLancamento(Object[] lancamento) {
-        if (lancamento == null || lancamento.length != 7) {
+        if (lancamento == null || lancamento.length != 8) {
             throw new FaturaException("Dados do lançamento inválidos.");
         }
 

@@ -79,6 +79,12 @@ public class FormService {
 
             String meses = faturaService.obterStringMeses(vezes, incluirMesAtual != 0);
 
+            String cartao = JOptionPane.showInputDialog("Qual foi o cartão utilizado?");
+            if (cartao == null) {
+                return null;
+            }
+            cartao = ValidadorInput.validarString(cartao);
+
             return new Object[]{
                 faturaService.getMaxId() + 1,
                 nome,
@@ -86,7 +92,8 @@ public class FormService {
                 vezes,
                 ehMeu == 0 ? "N" : "S",
                 meses,
-                0
+                0,
+                cartao
             };
         } catch (Exception e) {
             logger.severe(String.format("Erro ao validar formulário: %s", e.getMessage()));
