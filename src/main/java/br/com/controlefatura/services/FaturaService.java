@@ -36,7 +36,7 @@ public class FaturaService {
      * Retorna as colunas da tabela de faturas.
      */
     public List<String> getColunas() {
-        return List.of("ID", "Nome", "A pagar", "Vezes", "Parcela", "É meu?", "Meses");
+        return List.of("ID", "Nome", "A pagar", "Vezes", "Parcela", "É meu?", "Cartão", "Meses");
     }
 
     /**

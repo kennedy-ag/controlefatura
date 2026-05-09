@@ -105,8 +105,8 @@ public class TabelaService {
     private static final Logger logger = Logger.getLogger(TabelaService.class.getName());
     public static final int ROW_HEIGHT = 27;
     private static final int HEADER_HEIGHT = 27;
-    private static final int[] COLUMN_WIDTHS = {60, 170, 80, 50, 80, 50, 90};
-    private static final int[] COLUNAS_CENTRALIZAR = {0, 2, 3, 4, 5};
+    private static final int[] COLUMN_WIDTHS = {60, 170, 80, 50, 80, 50, 60, 90};
+    private static final int[] COLUNAS_CENTRALIZAR = {0, 2, 3, 4, 5, 6};
 
     /**
      * Cria uma JTable com formatação e sorter configurados.

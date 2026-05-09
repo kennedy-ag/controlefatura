@@ -77,6 +77,7 @@ public class FaturaDao {
                     resultSet.getInt("parcelas_restantes"),
                     normalizarBigDecimal(resultSet.getBigDecimal("valor_da_parcela")),
                     resultSet.getString("in_eh_meu"),
+                    resultSet.getString("cartao_utilizado"),
                     resultSet.getString("meses_restantes"),
                 };
                 lista.add(linha);

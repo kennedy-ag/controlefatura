@@ -35,7 +35,7 @@ public class Main {
     private DefaultTableModel tableModel;
     private JTable tabela;
 
-    private final int FRAME_WIDTH = 750;
+    private final int FRAME_WIDTH = 800;
 
     public static void main(String[] args) {
         try {
