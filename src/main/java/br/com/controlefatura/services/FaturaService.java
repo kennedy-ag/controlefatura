@@ -232,8 +232,11 @@ public class FaturaService {
             throw new FaturaException("SQL não pode estar vazio.");
         }
 
+        boolean isSelect = sql.trim().toLowerCase().startsWith("select");
+        sql = isSelect ? sql.replace(";", "") + " LIMIT 40" : sql;
+
         try {
-            return faturaDao.rodarQueryEventual(sql);
+            return faturaDao.rodarQueryEventual(sql, isSelect);
         } catch (Exception e) {
             logger.severe(String.format("Erro ao executar query eventual: %s", e.getMessage()));
             return "Erro: " + e.getMessage();

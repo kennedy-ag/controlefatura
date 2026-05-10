@@ -288,12 +288,36 @@ public class FaturaDao {
         }
     }
 
-    public String rodarQueryEventual(String sql) {
+    public String rodarQueryEventual(String sql, boolean isSelect) {
         try (Connection conn = obterConexao();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            int rowsAffected = ps.executeUpdate();
-            return "Query eventual executada com sucesso!\n" + rowsAffected + " linha(s) afetada(s).";
+            if (isSelect) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    StringBuilder resultado = new StringBuilder();
+                    for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+                        resultado.append(rs.getMetaData().getColumnName(i)).append(" - ");
+                        if (i == rs.getMetaData().getColumnCount()) {
+                            resultado.setLength(resultado.length() - 3);
+                        }
+                    }
+                    resultado.append("\n").append("-".repeat(50)).append("\n");
+
+                    while (rs.next()) {
+                        for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
+                            resultado.append(rs.getString(i)).append(" - ");
+                            if (i == rs.getMetaData().getColumnCount()) {
+                                resultado.setLength(resultado.length() - 3);
+                            }
+                        }
+                        resultado.append("\n");
+                    }
+                    return resultado.toString();
+                }
+            } else {
+                int rowsAffected = ps.executeUpdate();
+                return "Query eventual executada com sucesso!\n" + rowsAffected + " linha(s) afetada(s).";
+            }
         } catch (SQLException e) {
             return e.getMessage();
         }
