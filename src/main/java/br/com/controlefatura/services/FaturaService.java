@@ -6,6 +6,7 @@ import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
@@ -24,6 +25,7 @@ import br.com.controlefatura.persistence.FaturaDao;
 public class FaturaService {
     private static final Logger logger = Logger.getLogger(FaturaService.class.getName());
     private static final LocalDate DIA_20 = LocalDate.now().withDayOfMonth(20);
+    private static final LocalDate FECHAMENTO_FATURA = LocalDate.now().withDayOfMonth(11);
     private static final Locale LOCALE_PADRAO = Locale.GERMANY;
 
     private final FaturaDao faturaDao;
@@ -119,6 +121,8 @@ public class FaturaService {
 
             faturaDao.inserirLancamento(lancamento);
             faturaDao.inserirHistoricoLancamento(lancamento);
+            inserirParcelasLancamento(lancamento);
+
             logger.info(String.format("Lançamento inserido com sucesso: %s", lancamento.getNome()));
         } catch (ClassCastException e) {
             logger.severe(String.format("Erro ao converter tipo de dados do lançamento: %s", e.getMessage()));
@@ -126,6 +130,19 @@ public class FaturaService {
         } catch (FaturaException e) {
             logger.severe(String.format("Erro ao inserir lançamento: %s", e.getMessage()));
             throw new FaturaException("Falha ao inserir lançamento.", e);
+        }
+    }
+
+    private void inserirParcelasLancamento(Lancamento lancamento) {
+        LocalDate dataLancamento = LocalDate.parse(lancamento.getData(), DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        int aux = dataLancamento.isAfter(FECHAMENTO_FATURA) ? 1 : 0;
+
+        for (int i = 0; i < lancamento.getQuantidadeParcelas(); i++) {
+            faturaDao.inserirParcelaLancamento(
+                faturaDao.getUltimoIdLancamento(), 
+                lancamento.getValorParcela(), 
+                dataLancamento.plusMonths(aux+i).getMonth().getDisplayName(TextStyle.FULL, Locale.of("pt", "BR"))
+            );
         }
     }
 

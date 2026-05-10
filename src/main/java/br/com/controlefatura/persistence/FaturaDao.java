@@ -159,6 +159,22 @@ public class FaturaDao {
         }
     }
 
+    public void inserirParcelaLancamento(int lancamentoId, BigDecimal valorParcela, String mes) {
+        String sql = "INSERT INTO parcelas (lancamento_id, valor, mes) VALUES (?, ?, ?)";
+        
+        try (Connection conn = obterConexao();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, lancamentoId);
+            ps.setBigDecimal(2, valorParcela);
+            ps.setString(3, mes);
+            int rowsAffected = ps.executeUpdate();
+            System.out.println(rowsAffected + " linha(s) inserida(s).");
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao inserir parcela do lançamento!", e);
+        }
+    }
+
     public BigDecimal getValorMes(String like) {
         String sql = "SELECT SUM(valor_parcela) FROM lancamento WHERE parcelas_restantes LIKE ?";
         
@@ -174,6 +190,22 @@ public class FaturaDao {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao obter valor do mês!", e);
+        }
+    }
+
+    public int getUltimoIdLancamento() {
+        String sql = "SELECT MAX(id) FROM lancamento";
+        
+        try (Connection conn = obterConexao();
+             Statement statement = conn.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+            
+            if (resultSet.next()) {
+                return resultSet.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao obter o ID máximo do lançamento!", e);
         }
     }
 
