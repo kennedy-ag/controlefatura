@@ -15,6 +15,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import br.com.controlefatura.model.Lancamento;
+
 public class FaturaDao {
     private static final String DB_DRIVER = "org.sqlite.JDBC";
     private static final RoundingMode DEFAULT_ROUNDING = RoundingMode.FLOOR;
@@ -62,25 +64,30 @@ public class FaturaDao {
         }
     }
 
-    public List<Object[]> getDadosFatura() {
-        List<Object[]> lista = new ArrayList<>();
+    /**
+     * Retorna todos os lançamentos como objetos Lancamento.
+     * Este é o método preferido para uso interno.
+     */
+    public List<Lancamento> getLancamentos() {
+        List<Lancamento> lista = new ArrayList<>();
 
         try (Connection conn = obterConexao();
              Statement statement = conn.createStatement();
              ResultSet resultSet = statement.executeQuery("SELECT * FROM lancamento")) {
             
             while (resultSet.next()) {
-                Object[] linha = new Object[]{
+                Lancamento lancamento = new Lancamento(
                     resultSet.getInt("id"),
+                    resultSet.getString("data"),
                     resultSet.getString("nome"),
-                    normalizarBigDecimal(resultSet.getDouble("valor_a_pagar")),
-                    resultSet.getInt("parcelas_restantes"),
-                    normalizarBigDecimal(resultSet.getBigDecimal("valor_da_parcela")),
-                    resultSet.getString("in_eh_meu"),
+                    normalizarBigDecimal(resultSet.getDouble("total_a_pagar")),
+                    resultSet.getInt("quantidade_parcelas"),
+                    normalizarBigDecimal(resultSet.getBigDecimal("valor_parcela")),
+                    resultSet.getBoolean("eh_meu")? "S" : "N",
                     resultSet.getString("cartao_utilizado"),
-                    resultSet.getString("meses_restantes"),
-                };
-                lista.add(linha);
+                    resultSet.getString("parcelas_restantes")
+                );
+                lista.add(lancamento);
             }
         } catch (SQLException e) {
             throw new RuntimeException("Não foi possível carregar os dados!", e);
@@ -92,7 +99,7 @@ public class FaturaDao {
     public BigDecimal getTotalFatura() {
         try (Connection conn = obterConexao();
              Statement statement = conn.createStatement();
-             ResultSet resultSet = statement.executeQuery("SELECT SUM(valor_a_pagar) FROM lancamento")) {
+             ResultSet resultSet = statement.executeQuery("SELECT SUM(total_a_pagar) FROM lancamento")) {
             
             if (resultSet.next()) {
                 BigDecimal total = resultSet.getBigDecimal(1);
@@ -104,21 +111,24 @@ public class FaturaDao {
         }
     }
 
-    public void inserirLancamento(Object[] lancamento) {
-        String sql = "INSERT INTO lancamento (id, nome, valor_a_pagar, parcelas_restantes, in_eh_meu, meses_restantes, valor_da_parcela, cartao_utilizado) "
+    /**
+     * Insere um novo lançamento no banco de dados usando um objeto Lancamento.
+     */
+    public void inserirLancamento(Lancamento lancamento) {
+        String sql = "INSERT INTO lancamento (data, nome, total_a_pagar, quantidade_parcelas, valor_parcela, eh_meu, cartao_utilizado, parcelas_restantes) "
                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = obterConexao();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            ps.setInt(1, (int) lancamento[0]);
-            ps.setString(2, (String) lancamento[1]);
-            ps.setBigDecimal(3, (BigDecimal) lancamento[2]);
-            ps.setInt(4, (int) lancamento[3]);
-            ps.setString(5, (String) lancamento[4]);
-            ps.setString(6, (String) lancamento[5]);
-            ps.setBigDecimal(7, (BigDecimal) lancamento[6]);
-            ps.setString(8, (String) lancamento[7]);
+            ps.setString(1, lancamento.getData());
+            ps.setString(2, lancamento.getNome());
+            ps.setBigDecimal(3, lancamento.getTotalAPagar());
+            ps.setInt(4, lancamento.getQuantidadeParcelas());
+            ps.setBigDecimal(5, lancamento.getValorParcela());
+            ps.setBoolean(6, "S".equals(lancamento.getEhMeu()));
+            ps.setString(7, lancamento.getCartaoUtilizado());
+            ps.setString(8, lancamento.getParcelasRestantes());
             int rowsAffected = ps.executeUpdate();
             System.out.println(rowsAffected + " linha(s) inserida(s).");
         } catch (SQLException e) {
@@ -126,22 +136,31 @@ public class FaturaDao {
         }
     }
 
-    public int getMaxId() {
+    /**
+     * Insere um novo lançamento no histórico de lançamentos
+     */
+    public void inserirHistoricoLancamento(Lancamento lancamento) {
+        String sql = "INSERT INTO historico_lancamento (data, nome, valor, quantidade_parcelas, eh_meu, cartao_utilizado) "
+                   + "VALUES (?, ?, ?, ?, ?, ?)";
+        
         try (Connection conn = obterConexao();
-             Statement statement = conn.createStatement();
-             ResultSet resultSet = statement.executeQuery("SELECT MAX(id) FROM lancamento")) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            if (resultSet.next()) {
-                return resultSet.getInt(1);
-            }
-            throw new RuntimeException("Nenhum ID foi encontrado!");
+            ps.setString(1, lancamento.getData());
+            ps.setString(2, lancamento.getNome());
+            ps.setBigDecimal(3, lancamento.getTotalAPagar());
+            ps.setInt(4, lancamento.getQuantidadeParcelas());
+            ps.setBoolean(5, "S".equals(lancamento.getEhMeu()));
+            ps.setString(6, lancamento.getCartaoUtilizado());
+            int rowsAffected = ps.executeUpdate();
+            System.out.println(rowsAffected + " linha(s) inserida(s).");
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao obter max id!", e);
+            throw new RuntimeException("Erro ao inserir lançamento no histórico!", e);
         }
     }
 
     public BigDecimal getValorMes(String like) {
-        String sql = "SELECT SUM(valor_da_parcela) FROM lancamento WHERE meses_restantes LIKE ?";
+        String sql = "SELECT SUM(valor_parcela) FROM lancamento WHERE parcelas_restantes LIKE ?";
         
         try (Connection conn = obterConexao();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -159,10 +178,10 @@ public class FaturaDao {
     }
 
     public void pagarFatura(String filtroMesAtual) {
-        String updateSql = "UPDATE lancamento SET valor_a_pagar = (valor_a_pagar - (valor_a_pagar / parcelas_restantes)), "
-                         + "parcelas_restantes = parcelas_restantes - 1, "
-                         + "meses_restantes = substr(meses_restantes, 2) "
-                         + "WHERE meses_restantes LIKE ?";
+        String updateSql = "UPDATE lancamento SET total_a_pagar = (total_a_pagar - (total_a_pagar / quantidade_parcelas)), "
+                         + "quantidade_parcelas = quantidade_parcelas - 1, "
+                         + "parcelas_restantes = substr(parcelas_restantes, 2) "
+                         + "WHERE parcelas_restantes LIKE ?";
         String deleteSql = "DELETE FROM lancamento WHERE parcelas_restantes = 0";
         
         try (Connection conn = obterConexao()) {

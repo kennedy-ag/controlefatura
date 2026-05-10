@@ -35,7 +35,7 @@ public class Main {
     private DefaultTableModel tableModel;
     private JTable tabela;
 
-    private final int FRAME_WIDTH = 800;
+    private final int FRAME_WIDTH = 860;
 
     public static void main(String[] args) {
         try {
@@ -130,7 +130,7 @@ public class Main {
             };
 
             faturaService.getColunas().forEach(model::addColumn);
-            faturaService.getDadosFatura().forEach(model::addRow);
+            faturaService.getLancamentos().forEach(lancamento -> model.addRow(lancamento.toArray()));
 
             return model;
         } catch (Exception e) {
@@ -174,7 +174,7 @@ public class Main {
     }
 
     private int getAlturaDinamicaFrame() {
-        int quantidadeLinhas = faturaService.getDadosFatura().size();
+        int quantidadeLinhas = faturaService.getLancamentos().size();
         if(quantidadeLinhas <= 6) {
             return 350;
         } else if(quantidadeLinhas <= 17) {

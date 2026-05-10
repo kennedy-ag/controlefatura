@@ -1,5 +1,6 @@
 package br.com.controlefatura.services;
 
+import java.awt.HeadlessException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
@@ -13,6 +14,7 @@ import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 import br.com.controlefatura.exception.FaturaException;
+import br.com.controlefatura.model.Lancamento;
 import br.com.controlefatura.persistence.FaturaDao;
 
 /**
@@ -32,19 +34,13 @@ public class FaturaService {
         this.formService = new FormService(this);
     }
 
-    /**
-     * Retorna as colunas da tabela de faturas.
-     */
     public List<String> getColunas() {
-        return List.of("ID", "Nome", "A pagar", "Vezes", "Parcela", "É meu?", "Cartão", "Meses");
+        return List.of("ID", "Data", "Nome", "A pagar", "Vezes", "Parcela", "É meu?", "Cartão", "Meses");
     }
 
-    /**
-     * Obtém todos os dados das faturas.
-     */
-    public List<Object[]> getDadosFatura() {
+    public List<Lancamento> getLancamentos() {
         try {
-            return faturaDao.getDadosFatura();
+            return faturaDao.getLancamentos();
         } catch (Exception e) {
             logger.severe(String.format("Erro ao obter dados das faturas: %s", e.getMessage()));
             throw new FaturaException("Falha ao carregar faturas do banco de dados.", e);
@@ -64,9 +60,6 @@ public class FaturaService {
         }
     }
 
-    /**
-     * Retorna o total formatado como string em formato de moeda (locales Alemanha).
-     */
     public String getTotalFaturaFormatado() {
         try {
             NumberFormat formato = NumberFormat.getNumberInstance(LOCALE_PADRAO);
@@ -80,21 +73,22 @@ public class FaturaService {
         }
     }
 
-    /**
-     * Obtém o valor da fatura do mês informado.
-     */
-    public BigDecimal getValorMes() {
+    public String getValorMes() {
         try {
+            NumberFormat formato = NumberFormat.getNumberInstance(LOCALE_PADRAO);
+            formato.setMinimumFractionDigits(2);
+            formato.setMaximumFractionDigits(2);
+
             LocalDate hoje = LocalDate.now();
             String inicialMesAtual = extrairInicialMes(hoje.getMonth());
             String inicialMesSeguinte = extrairInicialMes(hoje.plusMonths(1).getMonth());
 
             if (hoje.isAfter(DIA_20) || hoje.isEqual(DIA_20)) {
                 BigDecimal valor = faturaDao.getValorMes(inicialMesSeguinte + "%");
-                return valor != null ? valor.setScale(2, RoundingMode.CEILING) : BigDecimal.ZERO;
+                return valor != null ? formato.format(valor) : formato.format(BigDecimal.ZERO);
             } else {
                 BigDecimal valor = faturaDao.getValorMes(inicialMesAtual + "%");
-                return valor != null ? valor.setScale(2, RoundingMode.CEILING) : BigDecimal.ZERO;
+                return valor != null ? formato.format(valor) : formato.format(BigDecimal.ZERO);
             }
         } catch (Exception e) {
             logger.severe(String.format("Erro ao obter valor do mês: %s", e.getMessage()));
@@ -102,51 +96,43 @@ public class FaturaService {
         }
     }
 
-    /**
-     * Insere um novo lançamento de fatura.
-     */
-    public void inserirLancamento(Object[] lancamento) {
-        if (lancamento == null || lancamento.length != 8) {
-            throw new FaturaException("Dados do lançamento inválidos.");
+    public void inserirLancamento(Lancamento lancamento) {
+        if (lancamento == null) {
+            throw new FaturaException("Lançamento não pode ser nulo.");
         }
 
         try {
-            BigDecimal valorPagar = (BigDecimal) lancamento[2];
-            int parcelas = (int) lancamento[3];
+            BigDecimal valorPagar = lancamento.getTotalAPagar();
+            int parcelas = lancamento.getQuantidadeParcelas();
 
             if (parcelas <= 0) {
                 throw new FaturaException("Número de parcelas deve ser maior que zero.");
             }
 
             if (valorPagar.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new FaturaException("Valor da parcela deve ser maior que zero.");
+                throw new FaturaException("Valor a pagar deve ser maior que zero.");
             }
 
             // Calcula o valor da parcela
             BigDecimal valorParcela = valorPagar.divide(BigDecimal.valueOf(parcelas), RoundingMode.HALF_UP);
-            lancamento[6] = valorParcela;
+            lancamento.setValorParcela(valorParcela);
 
             faturaDao.inserirLancamento(lancamento);
-            logger.info(String.format("Lançamento inserido com sucesso: %s", lancamento[1]));
+            faturaDao.inserirHistoricoLancamento(lancamento);
+            logger.info(String.format("Lançamento inserido com sucesso: %s", lancamento.getNome()));
         } catch (ClassCastException e) {
             logger.severe(String.format("Erro ao converter tipo de dados do lançamento: %s", e.getMessage()));
             throw new FaturaException("Tipo de dados inválido no lançamento.", e);
-        } catch (Exception e) {
+        } catch (FaturaException e) {
             logger.severe(String.format("Erro ao inserir lançamento: %s", e.getMessage()));
             throw new FaturaException("Falha ao inserir lançamento.", e);
         }
     }
 
-    /**
-     * Exclui um lançamento pelo ID.
-     */
     public void deletarLancamento(int id) {
         deletarLancamentos(List.of(id));
     }
 
-    /**
-     * Exclui vários lançamentos pelos IDs.
-     */
     public void deletarLancamentos(List<Integer> ids) {
         if (ids == null || ids.isEmpty()) {
             throw new FaturaException("Nenhum ID informado para exclusão.");
@@ -163,21 +149,9 @@ public class FaturaService {
                 throw new FaturaException("Nem todos os lançamentos foram encontrados para exclusão.");
             }
             logger.info(String.format("Lançamentos excluídos com sucesso: %s", ids));
-        } catch (Exception e) {
+        } catch (FaturaException e) {
             logger.severe(String.format("Erro ao excluir lançamentos: %s", e.getMessage()));
             throw new FaturaException("Falha ao excluir lançamentos.", e);
-        }
-    }
-
-    /**
-     * Retorna o ID máximo atual no banco de dados.
-     */
-    public int getMaxId() {
-        try {
-            return faturaDao.getMaxId();
-        } catch (Exception e) {
-            logger.severe(String.format("Erro ao obter max ID: %s", e.getMessage()));
-            throw new FaturaException("Falha ao obter ID máximo.", e);
         }
     }
 
@@ -202,7 +176,7 @@ public class FaturaService {
             }
 
             return resultado.toString().toUpperCase();
-        } catch (Exception e) {
+        } catch (FaturaException e) {
             logger.severe(String.format("Erro ao gerar string de meses: %s", e.getMessage()));
             throw new FaturaException("Falha ao gerar string de meses.", e);
         }
@@ -221,7 +195,7 @@ public class FaturaService {
                 logger.info(String.format("Fatura paga com sucesso para o mês: %s", inicialMes));
                 JOptionPane.showMessageDialog(null, "Pagamento realizado!");
             }
-        } catch (Exception e) {
+        } catch (HeadlessException e) {
             logger.severe(String.format("Erro ao pagar fatura: %s", e.getMessage()));
             throw new FaturaException("Falha ao realizar pagamento.", e);
         }
@@ -252,4 +226,3 @@ public class FaturaService {
             .toUpperCase();
     }
 }
-

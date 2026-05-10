@@ -1,5 +1,6 @@
 package br.com.controlefatura.ui;
 
+import java.awt.HeadlessException;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -8,6 +9,7 @@ import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
 import br.com.controlefatura.handler.SelectionHandler;
+import br.com.controlefatura.model.Lancamento;
 import br.com.controlefatura.services.FaturaService;
 import br.com.controlefatura.services.FormService;
 import br.com.controlefatura.services.TabelaService;
@@ -41,13 +43,13 @@ public class ButtonFactory {
         JButton botao = new JButton("Adicionar");
         botao.addActionListener(e -> {
             try {
-                Object[] lancamento = formService.formAdicionarLancamento();
+                Lancamento lancamento = formService.formAdicionarLancamento();
                 if (lancamento != null) {
                     faturaService.inserirLancamento(lancamento);
                     atualizarInterface.run();
                     JOptionPane.showMessageDialog(null, "Lançamento adicionado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                 }
-            } catch (Exception ex) {
+            } catch (HeadlessException ex) {
                 logger.warning(String.format("Erro ao adicionar lançamento: %s", ex.getMessage()));
                 JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -80,7 +82,7 @@ public class ButtonFactory {
                     atualizarInterface.run();
                     JOptionPane.showMessageDialog(null, "Lançamento(s) excluído(s) com sucesso!", "Excluído", JOptionPane.INFORMATION_MESSAGE);
                 }
-            } catch (Exception ex) {
+            } catch (HeadlessException ex) {
                 logger.warning(String.format("Erro ao excluir lançamento: %s", ex.getMessage()));
                 JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -112,9 +114,9 @@ public class ButtonFactory {
         JButton botao = new JButton("Valor");
         botao.addActionListener(e -> {
             try {
-                java.math.BigDecimal valor = faturaService.getValorMes();
+                String valor = faturaService.getValorMes();
                 JOptionPane.showMessageDialog(null, "Valor do mês: R$ " + valor, "Valor", JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
+            } catch (HeadlessException ex) {
                 logger.warning(String.format("Erro ao obter valor do mês: %s", ex.getMessage()));
                 JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -136,7 +138,7 @@ public class ButtonFactory {
                     TabelaService.atualizarTabela(tableModel, faturaService);
                     atualizarInterface.run();
                 }
-            } catch (Exception ex) {
+            } catch (HeadlessException ex) {
                 logger.warning(String.format("Erro ao executar SQL: %s", ex.getMessage()));
                 JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }

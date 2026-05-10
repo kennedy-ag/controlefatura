@@ -1,5 +1,6 @@
 package br.com.controlefatura.services;
 
+import java.awt.HeadlessException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.TextStyle;
@@ -8,6 +9,7 @@ import java.util.logging.Logger;
 
 import javax.swing.JOptionPane;
 
+import br.com.controlefatura.model.Lancamento;
 import br.com.controlefatura.util.ValidadorInput;
 
 /**
@@ -25,9 +27,9 @@ public class FormService {
 
     /**
      * Abre formulário para adicionar novo lançamento.
-     * Retorna null se o usuário cancelar a operação.
+     * Retorna um objeto Lancamento ou null se o usuário cancelar a operação.
      */
-    public Object[] formAdicionarLancamento() {
+    public Lancamento formAdicionarLancamento() {
         try {
             String nome = JOptionPane.showInputDialog("O que deseja adicionar?");
             if (nome == null) {
@@ -85,17 +87,25 @@ public class FormService {
             }
             cartao = ValidadorInput.validarString(cartao);
 
-            return new Object[]{
-                faturaService.getMaxId() + 1,
+            String data = JOptionPane.showInputDialog("Qual foi a data da compra?");
+            if (data == null) {
+                return null;
+            }
+            data = ValidadorInput.validarString(data);
+
+            // Retorna um novo Lancamento com os dados do formulário
+            return new Lancamento(
+                0, // ID será gerado pelo banco de dados
+                data,
                 nome,
                 valor,
                 vezes,
+                BigDecimal.ZERO,  // valor_da_parcela será calculado no FaturaService
                 ehMeu == 0 ? "N" : "S",
-                meses,
-                0,
-                cartao
-            };
-        } catch (Exception e) {
+                cartao,
+                meses
+            );
+        } catch (HeadlessException e) {
             logger.severe(String.format("Erro ao validar formulário: %s", e.getMessage()));
             JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage(), "Erro na entrada", JOptionPane.ERROR_MESSAGE);
             return null;

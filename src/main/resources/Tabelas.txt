@@ -1,0 +1,26 @@
+lancamento
+- id INTEGER PRIMARY KEY AUTOINCREMENT,
+- data CHAR(10),
+- nome VARCHAR(50),
+- total_a_pagar REAL,
+- quantidade parcelas INTEGER,
+- valor_parcela REAL,
+- eh_meu BOOLEAN,
+- cartao_utilizado VARCHAR(10),
+- parcelas_restantes VARCHAR(24)
+
+parcelas
+- id INTEGER PRIMARY KEY AUTOINCREMENT,
+- lancamento_id INTEGER,
+- valor REAL,
+- mês VARCHAR(10),
+- FOREIGN KEY (lancamento_id) REFERENCES lancamento(id)
+
+histórico_lancamento
+- id INTEGER PRIMARY KEY AUTOINCREMENT,
+- data CHAR(10),
+- nome VARCHAR(50),
+- valor REAL,
+- quantidade parcelas INTEGER,
+- eh_meu BOOLEAN,
+- cartao_utilizado VARCHAR(10)

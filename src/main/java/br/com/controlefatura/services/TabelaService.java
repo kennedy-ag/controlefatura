@@ -5,6 +5,8 @@ import java.awt.Font;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Logger;
 
 import javax.swing.JTable;
@@ -105,8 +107,8 @@ public class TabelaService {
     private static final Logger logger = Logger.getLogger(TabelaService.class.getName());
     public static final int ROW_HEIGHT = 27;
     private static final int HEADER_HEIGHT = 27;
-    private static final int[] COLUMN_WIDTHS = {60, 170, 80, 50, 80, 50, 60, 90};
-    private static final int[] COLUNAS_CENTRALIZAR = {0, 2, 3, 4, 5, 6};
+    private static final int[] COLUMN_WIDTHS = {60, 60, 170, 80, 50, 80, 50, 60, 90};
+    private static final int[] COLUNAS_CENTRALIZAR = {0, 1, 3, 4, 5, 6, 7};
 
     /**
      * Cria uma JTable com formatação e sorter configurados.
@@ -131,9 +133,10 @@ public class TabelaService {
             redimensionarColunas(tabela);
             centralizarColunas(tabela, COLUNAS_CENTRALIZAR);
             aplicarNegroNaColuna(tabela, 0);
-            aplicarCoresNaColuna(tabela, 5);
-            aplicarFormatacaoDecimal(tabela, 2, 4);
-            aplicarEspacamentoNaColuna(tabela, 1);
+            aplicarCoresNaColuna(tabela, 6);
+            aplicarFormatacaoDecimal(tabela, 3, 5);
+            aplicarEspacamentoNaColuna(tabela, 2);
+            aplicarEspacamentoNaColuna(tabela, 8);
 
             return tabela;
         } catch (Exception e) {
@@ -160,7 +163,7 @@ public class TabelaService {
             }
 
             // Adiciona as linhas atualizadas
-            faturaService.getDadosFatura().forEach(tableModel::addRow);
+            faturaService.getLancamentos().forEach(lancamento -> tableModel.addRow(lancamento.toArray()));
             logger.info("Tabela atualizada com sucesso.");
         } catch (Exception e) {
             logger.severe(String.format("Erro ao atualizar tabela: %s", e.getMessage()));
@@ -173,14 +176,19 @@ public class TabelaService {
      */
     private static void configurarComparadores(TableRowSorter<DefaultTableModel> sorter) {
         sorter.setComparator(0, (Integer id1, Integer id2) -> Integer.compare(id1, id2));
-        sorter.setComparator(2, (BigDecimal b1, BigDecimal b2) -> {
+        sorter.setComparator(1, (String s1, String s2) -> {
+            LocalDate d1 = LocalDate.parse(s1, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            LocalDate d2 = LocalDate.parse(s2, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            return d1.compareTo(d2);
+        });
+        sorter.setComparator(3, (BigDecimal b1, BigDecimal b2) -> {
             if (b1 == null && b2 == null) return 0;
             if (b1 == null) return -1;
             if (b2 == null) return 1;
             return b1.compareTo(b2);
         });
-        sorter.setComparator(3, (Integer i1, Integer i2) -> Integer.compare(i1, i2));
-        sorter.setComparator(4, (BigDecimal b1, BigDecimal b2) -> {
+        sorter.setComparator(4, (Integer i1, Integer i2) -> Integer.compare(i1, i2));
+        sorter.setComparator(5, (BigDecimal b1, BigDecimal b2) -> {
             if (b1 == null && b2 == null) return 0;
             if (b1 == null) return -1;
             if (b2 == null) return 1;
