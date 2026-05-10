@@ -13,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import br.com.controlefatura.model.Lancamento;
@@ -175,21 +176,23 @@ public class FaturaDao {
         }
     }
 
-    public BigDecimal getValorMes(String like) {
-        String sql = "SELECT SUM(valor_parcela) FROM lancamento WHERE parcelas_restantes LIKE ?";
+    public HashMap<String, BigDecimal> getProximasFaturas() {
+        String sql = "SELECT mes, SUM(valor) FROM parcelas GROUP BY mes";
         
         try (Connection conn = obterConexao();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setString(1, like);
-            try (ResultSet resultSet = ps.executeQuery()) {
-                if (resultSet.next()) {
-                    return resultSet.getBigDecimal(1);
-                }
-                throw new RuntimeException("Sem lançamentos a serem pagos.");
+            Statement statement = conn.createStatement();
+            ResultSet resultSet = statement.executeQuery(sql)) {
+
+            HashMap<String, BigDecimal> faturas = new HashMap<>();
+
+            while (resultSet.next()) {
+                String mes = resultSet.getString(1);
+                BigDecimal valor = resultSet.getBigDecimal(2).setScale(2, RoundingMode.HALF_UP);
+                faturas.put(mes, valor);
             }
+            return faturas;
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao obter valor do mês!", e);
+            throw new RuntimeException("Erro ao obter próximas faturas!", e);
         }
     }
 

@@ -110,14 +110,14 @@ public class ButtonFactory {
     /**
      * Cria o botão Valor.
      */
-    public JButton criarBotaoVerValor() {
-        JButton botao = new JButton("Valor");
+    public JButton criarBotaoVerFaturas() {
+        JButton botao = new JButton("Faturas");
         botao.addActionListener(e -> {
             try {
-                String valor = faturaService.getValorMes();
-                JOptionPane.showMessageDialog(null, "Valor do mês: R$ " + valor, "Valor", JOptionPane.INFORMATION_MESSAGE);
+                String resumo = faturaService.getResumoFaturas();
+                JOptionPane.showMessageDialog(null, "Próximas faturas: \n\n" + resumo + "\n", "Resumo", JOptionPane.INFORMATION_MESSAGE);
             } catch (HeadlessException ex) {
-                logger.warning(String.format("Erro ao obter valor do mês: %s", ex.getMessage()));
+                logger.warning(String.format("Erro ao obter resumo das faturas: %s", ex.getMessage()));
                 JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
         });

@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Logger;
@@ -24,9 +25,14 @@ import br.com.controlefatura.persistence.FaturaDao;
  */
 public class FaturaService {
     private static final Logger logger = Logger.getLogger(FaturaService.class.getName());
-    private static final LocalDate DIA_20 = LocalDate.now().withDayOfMonth(20);
+
     private static final LocalDate FECHAMENTO_FATURA = LocalDate.now().withDayOfMonth(11);
+
     private static final Locale LOCALE_PADRAO = Locale.GERMANY;
+    private static final List<String> MESES = List.of(
+        "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+        "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    );
 
     private final FaturaDao faturaDao;
     private final FormService formService;
@@ -75,23 +81,23 @@ public class FaturaService {
         }
     }
 
-    public String getValorMes() {
+    public String getResumoFaturas() {
         try {
             NumberFormat formato = NumberFormat.getNumberInstance(LOCALE_PADRAO);
             formato.setMinimumFractionDigits(2);
             formato.setMaximumFractionDigits(2);
 
-            LocalDate hoje = LocalDate.now();
-            String inicialMesAtual = extrairInicialMes(hoje.getMonth());
-            String inicialMesSeguinte = extrairInicialMes(hoje.plusMonths(1).getMonth());
+            HashMap<String, BigDecimal> proximasFaturas = faturaDao.getProximasFaturas();
+            StringBuilder resumo = new StringBuilder();
 
-            if (hoje.isAfter(DIA_20) || hoje.isEqual(DIA_20)) {
-                BigDecimal valor = faturaDao.getValorMes(inicialMesSeguinte + "%");
-                return valor != null ? formato.format(valor) : formato.format(BigDecimal.ZERO);
-            } else {
-                BigDecimal valor = faturaDao.getValorMes(inicialMesAtual + "%");
-                return valor != null ? formato.format(valor) : formato.format(BigDecimal.ZERO);
+            for (String mes : MESES) {
+                if (proximasFaturas.containsKey(mes)) {
+                    BigDecimal valor = proximasFaturas.get(mes).setScale(2, RoundingMode.HALF_UP);
+                    resumo.append(String.format("%s: R$ %s\n", mes, formato.format(valor)));
+                }
             }
+
+            return resumo.toString();
         } catch (Exception e) {
             logger.severe(String.format("Erro ao obter valor do mês: %s", e.getMessage()));
             throw new FaturaException("Falha ao obter valor do mês.", e);

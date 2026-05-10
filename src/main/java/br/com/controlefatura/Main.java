@@ -99,7 +99,7 @@ public class Main {
             buttonFactory.criarBotaoAdicionar(),
             buttonFactory.criarBotaoExcluir(),
             buttonFactory.criarBotaoPagar(),
-            buttonFactory.criarBotaoVerValor(),
+            buttonFactory.criarBotaoVerFaturas(),
             buttonFactory.criarBotaoRodarSQL()
         );
         
