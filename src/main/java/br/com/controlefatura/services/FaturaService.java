@@ -34,12 +34,18 @@ public class FaturaService {
         "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
     );
 
+    private static final HashMap<String, String> comandosSQL = new HashMap<>();
+
     private final FaturaDao faturaDao;
     private final FormService formService;
 
     public FaturaService(FaturaDao faturaDao) {
         this.faturaDao = faturaDao;
         this.formService = new FormService(this);
+        comandosSQL.put("historico", "SELECT * FROM historico_lancamento");
+        comandosSQL.put("parcelas", "SELECT * FROM parcelas");
+        comandosSQL.put("total-parcelado", "SELECT SUM(valor_parcela) FROM lancamento WHERE quantidade_parcelas > 1");
+        comandosSQL.put("total-a-vista", "SELECT SUM(valor_parcela) FROM lancamento WHERE quantidade_parcelas = 1");
     }
 
     public List<String> getColunas() {
@@ -227,16 +233,20 @@ public class FaturaService {
     /**
      * Executa uma query SQL eventual.
      */
-    public String rodarQueryEventual(String sql) {
-        if (sql == null || sql.isBlank()) {
+    public String rodarQueryEventual(String arg) {
+        if (arg == null || arg.isBlank()) {
             throw new FaturaException("SQL não pode estar vazio.");
         }
 
-        boolean isSelect = sql.trim().toLowerCase().startsWith("select");
-        sql = isSelect ? sql.replace(";", "") + " LIMIT 40" : sql;
+        if (comandosSQL.containsKey(arg)) {
+            arg = comandosSQL.get(arg);
+        }
+
+        boolean isSelect = arg.trim().toLowerCase().startsWith("select");
+        arg = isSelect ? arg.replace(";", "") + " LIMIT 40" : arg;
 
         try {
-            return faturaDao.rodarQueryEventual(sql, isSelect);
+            return faturaDao.rodarQueryEventual(arg, isSelect);
         } catch (Exception e) {
             logger.severe(String.format("Erro ao executar query eventual: %s", e.getMessage()));
             return "Erro: " + e.getMessage();

@@ -131,7 +131,16 @@ public class ButtonFactory {
         JButton botao = new JButton("SQL");
         botao.addActionListener(e -> {
             try {
-                String sql = JOptionPane.showInputDialog("Digite a query SQL eventual:");
+                String sql = JOptionPane.showInputDialog(
+                """
+                    Escolha um comando ou digite uma query SQL:
+                    
+                    - 'historico' para ver o histórico de lançamentos
+                    - 'parcelas' para ver as parcelas ativas
+                    - 'total-parcelado' para ver lançamentos parcelados
+                    - 'total-a-vista' para ver lançamentos à vista
+
+                """);
                 if (sql != null && !sql.isBlank()) {
                     String resultado = faturaService.rodarQueryEventual(sql);
                     JOptionPane.showMessageDialog(null, resultado, "Resultado", JOptionPane.INFORMATION_MESSAGE);
