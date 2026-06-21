@@ -213,11 +213,11 @@ public class FaturaDao {
     }
 
     public void pagarFatura(String filtroMesAtual) {
-        String updateSql = "UPDATE lancamento SET total_a_pagar = (total_a_pagar - (total_a_pagar / quantidade_parcelas)), "
+        String updateSql = "UPDATE lancamento SET total_a_pagar = (total_a_pagar - valor_parcela), "
                          + "quantidade_parcelas = quantidade_parcelas - 1, "
                          + "parcelas_restantes = substr(parcelas_restantes, 2) "
                          + "WHERE parcelas_restantes LIKE ?";
-        String deleteSql = "DELETE FROM lancamento WHERE parcelas_restantes = 0";
+        String deleteSql = "DELETE FROM lancamento WHERE quantidade_parcelas = 0";
         
         try (Connection conn = obterConexao()) {
             try (PreparedStatement psUpdate = conn.prepareStatement(updateSql)) {
