@@ -6,13 +6,11 @@ import java.util.logging.Logger;
 
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
-import javax.swing.table.DefaultTableModel;
 
 import br.com.controlefatura.handler.SelectionHandler;
 import br.com.controlefatura.model.Lancamento;
 import br.com.controlefatura.services.FaturaService;
 import br.com.controlefatura.services.FormService;
-import br.com.controlefatura.services.TabelaService;
 
 /**
  * Factory para criar botões da interface com seus respectivos listeners.
@@ -23,16 +21,13 @@ public class ButtonFactory {
     private final FaturaService faturaService;
     private final FormService formService;
     private final SelectionHandler selectionHandler;
-    private final DefaultTableModel tableModel;
     private final Runnable atualizarInterface;
 
-    public ButtonFactory(FaturaService faturaService, FormService formService, 
-                         SelectionHandler selectionHandler, DefaultTableModel tableModel,
-                         Runnable atualizarInterface) {
+    public ButtonFactory(FaturaService faturaService, FormService formService,
+                         SelectionHandler selectionHandler, Runnable atualizarInterface) {
         this.faturaService = faturaService;
         this.formService = formService;
         this.selectionHandler = selectionHandler;
-        this.tableModel = tableModel;
         this.atualizarInterface = atualizarInterface;
     }
 
@@ -144,7 +139,6 @@ public class ButtonFactory {
                 if (sql != null && !sql.isBlank()) {
                     String resultado = faturaService.rodarQueryEventual(sql);
                     JOptionPane.showMessageDialog(null, resultado, "Resultado", JOptionPane.INFORMATION_MESSAGE);
-                    TabelaService.atualizarTabela(tableModel, faturaService);
                     atualizarInterface.run();
                 }
             } catch (HeadlessException ex) {

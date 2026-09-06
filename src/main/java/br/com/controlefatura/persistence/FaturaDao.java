@@ -22,7 +22,9 @@ public class FaturaDao {
     private static final String DB_DRIVER = "org.sqlite.JDBC";
     private static final RoundingMode DEFAULT_ROUNDING = RoundingMode.FLOOR;
     private static final int SCALE = 2;
-    private static String DB_URL;
+    private static final String DB_PATH_DEV = "./src/main/resources/dados-fatura.db";
+    private static final String DB_PATH_USER = System.getProperty("user.home") + "/.controlefatura/dados-fatura.db";
+    private static final String DB_URL;
 
     static {
         try {
@@ -33,24 +35,19 @@ public class FaturaDao {
     }
 
     private static String inicializarBancoDados() throws IOException {
-        // Tenta carregar o banco de dados a partir dos recursos
-        InputStream recursoDb = FaturaDao.class.getResourceAsStream("/dados-fatura.db");
-        
-        if (recursoDb != null) {
-            // Banco está nos recursos (dentro do jar)
-            File dbTemp = new File(System.getProperty("user.home") + "/.controlefatura/dados-fatura.db");
-            dbTemp.getParentFile().mkdirs();
-            
-            // Copia o banco apenas se ele não existe (primeira execução)
-            if (!dbTemp.exists()) {
-                Files.copy(recursoDb, dbTemp.toPath());
+        try (InputStream recursoDb = FaturaDao.class.getResourceAsStream("/dados-fatura.db")) {
+            if (recursoDb != null) {
+                File dbTemp = new File(DB_PATH_USER);
+                File diretorio = dbTemp.getParentFile();
+                if (diretorio != null && !diretorio.exists()) {
+                    diretorio.mkdirs();
+                }
+                if (!dbTemp.exists()) {
+                    Files.copy(recursoDb, dbTemp.toPath());
+                }
+                return "jdbc:sqlite:" + dbTemp.getAbsolutePath();
             }
-            recursoDb.close();
-            
-            return "jdbc:sqlite:" + dbTemp.getAbsolutePath();
-        } else {
-            // Banco está no projeto (desenvolvimento)
-            return "jdbc:sqlite:./src/main/resources/dados-fatura.db";
+            return "jdbc:sqlite:" + new File(DB_PATH_DEV).getAbsolutePath();
         }
     }
 
@@ -116,12 +113,16 @@ public class FaturaDao {
      * Insere um novo lançamento no banco de dados usando um objeto Lancamento.
      */
     public void inserirLancamento(Lancamento lancamento) {
+        inserirLancamentoEObterId(lancamento);
+    }
+
+    public int inserirLancamentoEObterId(Lancamento lancamento) {
         String sql = "INSERT INTO lancamento (data, nome, total_a_pagar, quantidade_parcelas, valor_parcela, eh_meu, cartao_utilizado, parcelas_restantes) "
                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        
+
         try (Connection conn = obterConexao();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
             ps.setString(1, lancamento.getData());
             ps.setString(2, lancamento.getNome());
             ps.setBigDecimal(3, lancamento.getTotalAPagar());
@@ -130,8 +131,19 @@ public class FaturaDao {
             ps.setBoolean(6, "S".equals(lancamento.getEhMeu()));
             ps.setString(7, lancamento.getCartaoUtilizado());
             ps.setString(8, lancamento.getParcelasRestantes());
+
             int rowsAffected = ps.executeUpdate();
-            System.out.println(rowsAffected + " linha(s) inserida(s).");
+            if (rowsAffected == 0) {
+                throw new SQLException("Nenhuma linha foi inserida para o lançamento.");
+            }
+
+            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    return generatedKeys.getInt(1);
+                }
+            }
+
+            return getUltimoIdLancamento();
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao inserir lançamento!", e);
         }

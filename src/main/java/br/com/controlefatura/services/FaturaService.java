@@ -8,9 +8,9 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.swing.JOptionPane;
@@ -34,7 +34,12 @@ public class FaturaService {
         "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
     );
 
-    private static final HashMap<String, String> comandosSQL = new HashMap<>();
+    private static final Map<String, String> COMANDOS_SQL = Map.of(
+        "historico", "SELECT * FROM historico_lancamento",
+        "parcelas", "SELECT * FROM parcelas",
+        "total-parcelado", "SELECT SUM(valor_parcela) FROM lancamento WHERE quantidade_parcelas > 1",
+        "total-a-vista", "SELECT SUM(valor_parcela) FROM lancamento WHERE quantidade_parcelas = 1"
+    );
 
     private final FaturaDao faturaDao;
     private final FormService formService;
@@ -42,10 +47,6 @@ public class FaturaService {
     public FaturaService(FaturaDao faturaDao) {
         this.faturaDao = faturaDao;
         this.formService = new FormService(this);
-        comandosSQL.put("historico", "SELECT * FROM historico_lancamento");
-        comandosSQL.put("parcelas", "SELECT * FROM parcelas");
-        comandosSQL.put("total-parcelado", "SELECT SUM(valor_parcela) FROM lancamento WHERE quantidade_parcelas > 1");
-        comandosSQL.put("total-a-vista", "SELECT SUM(valor_parcela) FROM lancamento WHERE quantidade_parcelas = 1");
     }
 
     public List<String> getColunas() {
@@ -93,7 +94,7 @@ public class FaturaService {
             formato.setMinimumFractionDigits(2);
             formato.setMaximumFractionDigits(2);
 
-            HashMap<String, BigDecimal> proximasFaturas = faturaDao.getProximasFaturas();
+            Map<String, BigDecimal> proximasFaturas = faturaDao.getProximasFaturas();
             StringBuilder resumo = new StringBuilder();
 
             for (String mes : MESES) {
@@ -131,9 +132,9 @@ public class FaturaService {
             BigDecimal valorParcela = valorPagar.divide(BigDecimal.valueOf(parcelas), RoundingMode.HALF_UP);
             lancamento.setValorParcela(valorParcela);
 
-            faturaDao.inserirLancamento(lancamento);
+            int lancamentoId = faturaDao.inserirLancamentoEObterId(lancamento);
             faturaDao.inserirHistoricoLancamento(lancamento);
-            inserirParcelasLancamento(lancamento);
+            inserirParcelasLancamento(lancamento, lancamentoId);
 
             logger.info(String.format("Lançamento inserido com sucesso: %s", lancamento.getNome()));
         } catch (ClassCastException e) {
@@ -145,15 +146,15 @@ public class FaturaService {
         }
     }
 
-    private void inserirParcelasLancamento(Lancamento lancamento) {
+    private void inserirParcelasLancamento(Lancamento lancamento, int lancamentoId) {
         LocalDate dataLancamento = LocalDate.parse(lancamento.getData(), DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         int aux = dataLancamento.isAfter(FECHAMENTO_FATURA) ? 1 : 0;
 
         for (int i = 0; i < lancamento.getQuantidadeParcelas(); i++) {
             faturaDao.inserirParcelaLancamento(
-                faturaDao.getUltimoIdLancamento(), 
-                lancamento.getValorParcela(), 
-                dataLancamento.plusMonths(aux+i).getMonth().getDisplayName(TextStyle.FULL, Locale.of("pt", "BR"))
+                lancamentoId,
+                lancamento.getValorParcela(),
+                dataLancamento.plusMonths(aux + i).getMonth().getDisplayName(TextStyle.FULL, Locale.of("pt", "BR"))
             );
         }
     }
@@ -238,8 +239,8 @@ public class FaturaService {
             throw new FaturaException("SQL não pode estar vazio.");
         }
 
-        if (comandosSQL.containsKey(arg)) {
-            arg = comandosSQL.get(arg);
+        if (COMANDOS_SQL.containsKey(arg)) {
+            arg = COMANDOS_SQL.get(arg);
         }
 
         boolean isSelect = arg.trim().toLowerCase().startsWith("select");

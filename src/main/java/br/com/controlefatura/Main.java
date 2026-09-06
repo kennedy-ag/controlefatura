@@ -35,7 +35,7 @@ public class Main {
     private DefaultTableModel tableModel;
     private JTable tabela;
 
-    private final int FRAME_WIDTH = 860;
+    private static final int FRAME_WIDTH = 860;
 
     public static void main(String[] args) {
         try {
@@ -93,8 +93,8 @@ public class Main {
         // Criar labels e painéis
         criarLabelTotal();
         SelectionHandler selectionHandler = new SelectionHandler(tabela, tableModel);
-        ButtonFactory buttonFactory = new ButtonFactory(faturaService, formService, selectionHandler, tableModel, this::atualizarInterface);
-        
+        ButtonFactory buttonFactory = new ButtonFactory(faturaService, formService, selectionHandler, this::atualizarInterface);
+
         JPanel painelBotoes = PainelBuilder.criarPainelBotoes(
             buttonFactory.criarBotaoAdicionar(),
             buttonFactory.criarBotaoExcluir(),
