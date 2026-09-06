@@ -1,11 +1,16 @@
 package br.com.controlefatura.ui;
 
 import java.awt.HeadlessException;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.swing.AbstractAction;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JOptionPane;
+import javax.swing.KeyStroke;
 
 import br.com.controlefatura.handler.SelectionHandler;
 import br.com.controlefatura.model.Lancamento;
@@ -31,11 +36,24 @@ public class ButtonFactory {
         this.atualizarInterface = atualizarInterface;
     }
 
+    private void registrarAtalhoTeclado(JButton botao, int keyCode) {
+        String actionKey = "shortcut-" + botao.getText();
+        botao.getActionMap().put(actionKey, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                botao.doClick();
+            }
+        });
+        botao.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(KeyStroke.getKeyStroke(keyCode, 0), actionKey);
+    }
+
     /**
      * Cria o botão Adicionar.
      */
     public JButton criarBotaoAdicionar() {
-        JButton botao = new JButton("Adicionar");
+        JButton botao = new JButton("Adicionar (A)");
+        registrarAtalhoTeclado(botao, KeyEvent.VK_A);
         botao.addActionListener(e -> {
             try {
                 Lancamento lancamento = formService.formAdicionarLancamento();
@@ -56,7 +74,8 @@ public class ButtonFactory {
      * Cria o botão Excluir.
      */
     public JButton criarBotaoExcluir() {
-        JButton botao = new JButton("Excluir");
+        JButton botao = new JButton("Excluir (E)");
+        registrarAtalhoTeclado(botao, KeyEvent.VK_E);
         botao.addActionListener(e -> {
             try {
                 List<Integer> ids = selectionHandler.obterIdsSelecionadosOuSolicitados();
@@ -89,7 +108,8 @@ public class ButtonFactory {
      * Cria o botão Pagar.
      */
     public JButton criarBotaoPagar() {
-        JButton botao = new JButton("Pagar");
+        JButton botao = new JButton("Pagar (P)");
+        registrarAtalhoTeclado(botao, KeyEvent.VK_P);
         botao.addActionListener(e -> {
             try {
                 faturaService.pagarFatura();
@@ -106,7 +126,8 @@ public class ButtonFactory {
      * Cria o botão Valor.
      */
     public JButton criarBotaoVerFaturas() {
-        JButton botao = new JButton("Faturas");
+        JButton botao = new JButton("Faturas (F)");
+        registrarAtalhoTeclado(botao, KeyEvent.VK_F);
         botao.addActionListener(e -> {
             try {
                 String resumo = faturaService.getResumoFaturas();
@@ -123,7 +144,8 @@ public class ButtonFactory {
      * Cria o botão SQL.
      */
     public JButton criarBotaoRodarSQL() {
-        JButton botao = new JButton("SQL");
+        JButton botao = new JButton("SQL (S)");
+        registrarAtalhoTeclado(botao, KeyEvent.VK_S);
         botao.addActionListener(e -> {
             try {
                 String sql = JOptionPane.showInputDialog(
