@@ -1,5 +1,7 @@
 package br.com.controlefatura.ui;
 
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.HeadlessException;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
@@ -10,6 +12,8 @@ import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
 
 import br.com.controlefatura.handler.SelectionHandler;
@@ -46,6 +50,21 @@ public class ButtonFactory {
         });
         botao.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
             .put(KeyStroke.getKeyStroke(keyCode, 0), actionKey);
+    }
+
+    private void mostrarResultadoSql(String resultado) {
+        JTextArea areaResultado = new JTextArea(resultado);
+        areaResultado.setEditable(false);
+        areaResultado.setWrapStyleWord(true);
+        areaResultado.setLineWrap(false);
+        areaResultado.setCaretPosition(0);
+        areaResultado.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 15));
+        areaResultado.setMargin(new java.awt.Insets(8, 8, 8, 8));
+
+        JScrollPane painelRolavel = new JScrollPane(areaResultado);
+        painelRolavel.setPreferredSize(new Dimension(700, 350));
+
+        JOptionPane.showMessageDialog(null, painelRolavel, "Resultado", JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
@@ -160,7 +179,7 @@ public class ButtonFactory {
                 """);
                 if (sql != null && !sql.isBlank()) {
                     String resultado = faturaService.rodarQueryEventual(sql);
-                    JOptionPane.showMessageDialog(null, resultado, "Resultado", JOptionPane.INFORMATION_MESSAGE);
+                    mostrarResultadoSql(resultado);
                     atualizarInterface.run();
                 }
             } catch (HeadlessException ex) {
