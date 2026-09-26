@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 
 import javax.swing.JOptionPane;
 
+import br.com.controlefatura.exception.FaturaException;
 import br.com.controlefatura.model.Lancamento;
 import br.com.controlefatura.util.ValidadorInput;
 
@@ -105,7 +106,7 @@ public class FormService {
                 cartao,
                 meses
             );
-        } catch (HeadlessException e) {
+        } catch (FaturaException | HeadlessException e) {
             logger.severe(String.format("Erro ao validar formulário: %s", e.getMessage()));
             JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage(), "Erro na entrada", JOptionPane.ERROR_MESSAGE);
             return null;

@@ -16,6 +16,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
 
+import br.com.controlefatura.exception.FaturaException;
 import br.com.controlefatura.handler.SelectionHandler;
 import br.com.controlefatura.model.Lancamento;
 import br.com.controlefatura.services.FaturaService;
@@ -81,7 +82,7 @@ public class ButtonFactory {
                     atualizarInterface.run();
                     JOptionPane.showMessageDialog(null, "Lançamento adicionado com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                 }
-            } catch (HeadlessException ex) {
+            } catch (FaturaException | HeadlessException ex) {
                 logger.warning(String.format("Erro ao adicionar lançamento: %s", ex.getMessage()));
                 JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -115,7 +116,7 @@ public class ButtonFactory {
                     atualizarInterface.run();
                     JOptionPane.showMessageDialog(null, "Lançamento(s) excluído(s) com sucesso!", "Excluído", JOptionPane.INFORMATION_MESSAGE);
                 }
-            } catch (HeadlessException ex) {
+            } catch (FaturaException | HeadlessException ex) {
                 logger.warning(String.format("Erro ao excluir lançamento: %s", ex.getMessage()));
                 JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -133,7 +134,7 @@ public class ButtonFactory {
             try {
                 faturaService.pagarFatura();
                 atualizarInterface.run();
-            } catch (Exception ex) {
+            } catch (FaturaException | HeadlessException ex) {
                 logger.warning(String.format("Erro ao pagar fatura: %s", ex.getMessage()));
                 JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -151,7 +152,7 @@ public class ButtonFactory {
             try {
                 String resumo = faturaService.getResumoFaturas();
                 JOptionPane.showMessageDialog(null, "Próximas faturas: \n\n" + resumo + "\n", "Resumo", JOptionPane.INFORMATION_MESSAGE);
-            } catch (HeadlessException ex) {
+            } catch (FaturaException | HeadlessException ex) {
                 logger.warning(String.format("Erro ao obter resumo das faturas: %s", ex.getMessage()));
                 JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -182,7 +183,7 @@ public class ButtonFactory {
                     mostrarResultadoSql(resultado);
                     atualizarInterface.run();
                 }
-            } catch (HeadlessException ex) {
+            } catch (FaturaException | HeadlessException ex) {
                 logger.warning(String.format("Erro ao executar SQL: %s", ex.getMessage()));
                 JOptionPane.showMessageDialog(null, "Erro: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
